@@ -1,0 +1,15 @@
+# ============================================================
+# Add this to your existing configuration.yaml. Do not add a
+# second "script:" or "automation:" key - use the
+# scripts_addition.yaml / automations_addition.yaml files for
+# those instead (see README).
+# ============================================================
+
+rest_command:
+  voron2tb_host_shutdown:
+    url: "http://<PRINTER_PI_IP>:7125/machine/shutdown"
+    method: POST
+    # headers:
+    #   X-Api-Key: "<YOUR_MOONRAKER_API_KEY>"   # only needed if
+    #   Moonraker's [authorization] trusted_clients does not
+    #   already include the Home Assistant host

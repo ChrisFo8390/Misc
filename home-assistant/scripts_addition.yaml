@@ -1,0 +1,39 @@
+# ============================================================
+# Append these two entries to your existing scripts.yaml.
+# Do NOT add a "script:" key here - scripts.yaml already IS
+# the content of the script: key (via the default
+# `script: !include scripts.yaml` in configuration.yaml).
+# ============================================================
+
+voron2tb_printer_off:
+  alias: Voron2TB Printer Off
+  sequence:
+    - if:
+        - condition: state
+          entity_id: device_tracker.vorontallboi
+          state: "home"
+      then:
+        # Host is reachable -> clean shutdown, wait, then cut power
+        - action: rest_command.voron2tb_host_shutdown
+        - delay:
+            seconds: 10
+        - action: switch.turn_off
+          target:
+            entity_id: switch.voron_2_4_switch_0
+      else:
+        # Host already unreachable -> cut power immediately
+        - action: switch.turn_off
+          target:
+            entity_id: switch.voron_2_4_switch_0
+
+voron2tb_printer_on:
+  alias: Voron2TB Printer On
+  sequence:
+    - if:
+        - condition: state
+          entity_id: switch.voron_2_4_switch_0
+          state: "off"
+      then:
+        - action: switch.turn_on
+          target:
+            entity_id: switch.voron_2_4_switch_0

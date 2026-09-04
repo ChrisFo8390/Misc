@@ -1,0 +1,91 @@
+views:
+  - title: Voron 2.4 Tallboi
+    path: voron2tb
+    icon: mdi:printer-3d
+    cards:
+      - type: horizontal-stack
+        cards:
+          - type: tile
+            entity: script.voron2tb_printer_on
+            name: Drucker ein
+            icon: mdi:power-on
+            hide_state: true
+            tap_action:
+              action: perform-action
+              perform_action: script.turn_on
+              target:
+                entity_id: script.voron2tb_printer_on
+            card_mod:
+              style: |
+                ha-card {
+                  --primary-text-color: green;
+                }
+          - type: tile
+            entity: script.voron2tb_printer_off
+            name: Drucker aus
+            icon: mdi:power-off
+            hide_state: true
+            tap_action:
+              action: perform-action
+              perform_action: script.turn_on
+              target:
+                entity_id: script.voron2tb_printer_off
+            card_mod:
+              style: |
+                ha-card {
+                  --primary-text-color: red;
+                }
+      - type: entities
+        title: Status
+        show_header_toggle: false
+        entities:
+          - entity: sensor.voron2tb_printer_state
+            name: Klipper Status
+          - entity: sensor.voron2tb_current_print_state
+            name: Druckstatus
+          - entity: sensor.voron2tb_printer_message
+            name: Meldung
+          - entity: sensor.voron2tb_progress
+            name: Fortschritt
+      - type: entities
+        title: Temperaturen
+        show_header_toggle: false
+        entities:
+          - entity: sensor.voron2tb_bed_temperature
+            name: Bett
+          - entity: sensor.voron2tb_extruder_temperature
+            name: T0 Hotend
+          - entity: sensor.voron2tb_extruder1_temperature
+            name: T1 Hotend
+          - entity: sensor.voron2tb_extruder2_temperature
+            name: T2 Hotend
+          - entity: sensor.voron2tb_extruder3_temperature
+            name: T3 Hotend
+          - entity: sensor.voron2tb_extruder4_temperature
+            name: T4 Hotend
+      - show_state: false
+        show_name: true
+        camera_view: live
+        fit_mode: cover
+        type: picture-entity
+        entity: camera.voron2tb_cam
+        name: Cam
+        tap_action:
+          action: none
+        card_mod:
+          style: |
+            hui-image {
+              transform: rotate(180deg);
+            }
+      - type: entities
+        title: Stromversorgung
+        show_header_toggle: false
+        entities:
+          - entity: switch.voron_2_4_switch_0
+            name: Drucker Stromversorgung
+          - entity: binary_sensor.voron2tb_logind_preparing_for_shutdown
+            name: Shutdown wird vorbereitet
+          - entity: sensor.voron_2_4_switch_0_power
+            name: Leistung
+          - entity: sensor.voron_2_4_switch_0_energy
+            name: Energie gesamt

@@ -1,0 +1,30 @@
+# ============================================================
+# Append this entry to your existing automations.yaml list.
+# Do NOT add an "automation:" key here - automations.yaml
+# already IS the list assigned to the automation: key (via
+# the default `automation: !include automations.yaml`).
+#
+# If automations.yaml currently only contains "[]" (empty
+# list placeholder), DELETE that line first - a document
+# cannot contain both "[]" and a block sequence.
+# ============================================================
+
+- alias: Voron2TB Auto-Shutdown Power Off
+  description: >-
+    Detects an externally triggered host shutdown (Mainsail, display,
+    SSH) via systemd/MQTT and switches off the Shelly plug afterwards.
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.voron2tb_logind_preparing_for_shutdown
+      to: "on"
+  condition:
+    - condition: state
+      entity_id: switch.voron_2_4_switch_0
+      state: "on"
+  action:
+    - delay:
+        seconds: 10
+    - action: switch.turn_off
+      target:
+        entity_id: switch.voron_2_4_switch_0
+  mode: single
