@@ -1,5 +1,5 @@
 # ============================================================
-# Append these two entries to your existing scripts.yaml.
+# Append these SIX entries to your existing scripts.yaml.
 # Do NOT add a "script:" key here - scripts.yaml already IS
 # the content of the script: key (via the default
 # `script: !include scripts.yaml` in configuration.yaml).
@@ -13,7 +13,6 @@ voron2tb_printer_off:
           entity_id: device_tracker.vorontallboi
           state: "home"
       then:
-        # Host is reachable -> clean shutdown, wait, then cut power
         - action: rest_command.voron2tb_host_shutdown
         - delay:
             seconds: 10
@@ -21,7 +20,6 @@ voron2tb_printer_off:
           target:
             entity_id: switch.voron_2_4_switch_0
       else:
-        # Host already unreachable -> cut power immediately
         - action: switch.turn_off
           target:
             entity_id: switch.voron_2_4_switch_0
@@ -37,3 +35,65 @@ voron2tb_printer_on:
         - action: switch.turn_on
           target:
             entity_id: switch.voron_2_4_switch_0
+
+trident_printer_off:
+  alias: Trident Printer Off
+  sequence:
+    - if:
+        - condition: state
+          entity_id: device_tracker.trident
+          state: "home"
+      then:
+        - action: rest_command.trident_host_shutdown
+        - delay:
+            seconds: 10
+        - action: switch.turn_off
+          target:
+            entity_id: switch.shelly_voron_trident_switch_0
+      else:
+        - action: switch.turn_off
+          target:
+            entity_id: switch.shelly_voron_trident_switch_0
+
+trident_printer_on:
+  alias: Trident Printer On
+  sequence:
+    - if:
+        - condition: state
+          entity_id: switch.shelly_voron_trident_switch_0
+          state: "off"
+      then:
+        - action: switch.turn_on
+          target:
+            entity_id: switch.shelly_voron_trident_switch_0
+
+voron0_printer_off:
+  alias: Voron 2 Mini Printer Off
+  sequence:
+    - if:
+        - condition: state
+          entity_id: device_tracker.voronv2mini
+          state: "home"
+      then:
+        - action: rest_command.voron0_host_shutdown
+        - delay:
+            seconds: 10
+        - action: switch.turn_off
+          target:
+            entity_id: switch.shelly_voron_v2_mini
+      else:
+        - action: switch.turn_off
+          target:
+            entity_id: switch.shelly_voron_v2_mini
+
+voron0_printer_on:
+  alias: Voron 2 Mini Printer On
+  sequence:
+    - if:
+        - condition: state
+          entity_id: switch.shelly_voron_v2_mini
+          state: "off"
+      then:
+        - action: switch.turn_on
+          target:
+            entity_id: switch.shelly_voron_v2_mini

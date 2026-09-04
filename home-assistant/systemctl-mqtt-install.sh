@@ -19,13 +19,22 @@
 # discovery messages.
 #
 # Reference: https://github.com/fphammerle/systemctl-mqtt
+#
+# This script and its credentials are identical for every printer
+# Pi - the login "systemctl-mqtt" / "Vorons" only needs to be
+# created ONCE in the Mosquitto add-on (Settings -> Add-ons ->
+# Mosquitto broker -> Configuration -> Logins), then this same
+# script can be copied and run unchanged on each printer's Pi.
+# Each Pi reports under its own hostname automatically (e.g.
+# binary_sensor.<hostname>_logind_preparing_for_shutdown), so no
+# per-printer values need to change here.
 # ============================================================
 
 set -e
 
 MQTT_HOST="homeassistant.local"      # <-- adjust to your HA host
 MQTT_USERNAME="systemctl-mqtt"        # <-- dedicated MQTT login (see guide)
-MQTT_PASSWORD="CHANGE_ME"             # <-- set this before running
+MQTT_PASSWORD="Vorons"                # <-- matches the Mosquitto add-on login
 
 echo "1) Installing dependencies..."
 sudo apt-get update

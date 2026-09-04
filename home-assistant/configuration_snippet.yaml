@@ -7,9 +7,21 @@
 
 rest_command:
   voron2tb_host_shutdown:
-    url: "http://<PRINTER_PI_IP>:7125/machine/shutdown"
+    url: "http://192.168.178.41:7125/machine/shutdown"
     method: POST
     # headers:
     #   X-Api-Key: "<YOUR_MOONRAKER_API_KEY>"   # only needed if
     #   Moonraker's [authorization] trusted_clients does not
     #   already include the Home Assistant host
+
+  trident_host_shutdown:
+    url: "http://192.168.178.42:7125/machine/shutdown"
+    method: POST
+    # headers:
+    #   X-Api-Key: "<YOUR_MOONRAKER_API_KEY>"
+
+  voron0_host_shutdown:
+    url: "http://192.168.178.44:7125/machine/shutdown"
+    method: POST
+    # headers:
+    #   X-Api-Key: "<YOUR_MOONRAKER_API_KEY>"

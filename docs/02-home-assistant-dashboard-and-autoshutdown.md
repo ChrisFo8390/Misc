@@ -1,9 +1,16 @@
 # Home Assistant Dashboard & Safe Auto-Shutdown
 
-This guide builds a Home Assistant Lovelace dashboard for a Klipper/Moonraker
-printer (status, temperatures, a rotated camera feed, and power control), plus
-an automation that safely cuts mains power via a Shelly smart plug **a fixed
-delay after a real shutdown is detected** — and never on a Wi-Fi hiccup.
+This guide builds a Home Assistant Lovelace dashboard for one or more
+Klipper/Moonraker printers (status, temperatures, a rotated camera feed, and
+power control), plus a per-printer automation that safely cuts mains power via
+a Shelly smart plug **a fixed delay after a real shutdown is detected** — and
+never on a Wi-Fi hiccup.
+
+The pattern is fully repeatable: this repository's own dashboard combines
+**three** printers (Voron 2.4 Tallboi, Trident, Voron 2 Mini) stacked on a
+single page using a `sections` view, each with its own scripts, `rest_command`,
+and shutdown-detection automation. Everything below is written for a single
+printer first, then shows how it repeats.
 
 All files referenced here live in [`home-assistant/`](../home-assistant/) in
 this repository.
@@ -36,14 +43,19 @@ this repository.
 
 The full dashboard is [`home-assistant/voron2tb_dashboard.yaml`](../home-assistant/voron2tb_dashboard.yaml) —
 paste its `views:` content into a dashboard's raw YAML editor (**Settings →
-Dashboards → (your dashboard) → ⋮ → Edit in YAML**), or merge just the
-`cards:` list into an existing view.
+Dashboards → (your dashboard) → ⋮ → Edit in YAML**). Note it uses the
+`type: sections` view (not the older masonry default) — each printer is one
+`grid` section with a `type: heading` card as its title, and sections simply
+stack vertically on the page. This keeps every printer's cards at full,
+consistent width regardless of how much content each one has, which a
+plain masonry view (or nesting `horizontal-stack`/`vertical-stack` cards to
+force a layout) does not reliably do.
 
-Example of the resulting layout (status, temperatures, camera, power):
+Final result — three printers stacked on one page:
 
-![Dashboard overview](images/homeassistant/dashboard-overview-example.png)
+![Dashboard overview with three printers](images/homeassistant/dashboard-overview-3-printers.png)
 
-Highlights:
+Highlights (per printer section):
 
 - **Power on/off tiles** — a `horizontal-stack` of two `type: tile` cards
   that call the scripts from section 3 directly on tap (`tap_action: →
@@ -81,9 +93,10 @@ Highlights:
 
 ## 3. Manual power control (scripts)
 
-Two [scripts](../home-assistant/scripts_addition.yaml) provide manual
-"printer on" / "printer off" buttons that do the right thing depending on
-current state, instead of blindly toggling the plug:
+Two scripts per printer (six total for three printers, in
+[`scripts_addition.yaml`](../home-assistant/scripts_addition.yaml)) provide
+manual "printer on" / "printer off" buttons that do the right thing depending
+on current state, instead of blindly toggling the plug:
 
 ```yaml
 voron2tb_printer_off:
@@ -118,8 +131,17 @@ voron2tb_printer_on:
             entity_id: switch.voron_2_4_switch_0
 ```
 
+The `device_tracker.*` entity is each printer's own network-presence tracker
+(created automatically once the Pi's router integration or DHCP tracking
+sees it) — used only to decide whether a clean Moonraker shutdown call makes
+sense, not as the shutdown trigger itself (see section 4 for why that
+distinction matters). `trident_printer_off`/`_on` and
+`voron0_printer_off`/`_on` repeat the exact same pattern with that printer's
+own `device_tracker`, `rest_command`, and `switch` entities.
+
 `rest_command.voron2tb_host_shutdown` calls Moonraker's shutdown endpoint
-directly (see [`configuration_snippet.yaml`](../home-assistant/configuration_snippet.yaml)):
+directly (one entry per printer in
+[`configuration_snippet.yaml`](../home-assistant/configuration_snippet.yaml)):
 
 ```yaml
 rest_command:
@@ -155,16 +177,14 @@ reachability, so a Wi-Fi outage can never trigger it.
 
 [`systemctl-mqtt`](https://github.com/fphammerle/systemctl-mqtt) is a small
 daemon that subscribes to that D-Bus signal and publishes it (plus Home
-Assistant MQTT auto-discovery config) to your MQTT broker. Install script:
-[`home-assistant/systemctl-mqtt-install.sh`](../home-assistant/systemctl-mqtt-install.sh).
+Assistant MQTT auto-discovery config) to your MQTT broker. Install steps with
+copy-pasteable commands: [`home-assistant/README.md`](../home-assistant/README.md).
 
-Run it **on the printer's Raspberry Pi** (not on the Home Assistant host —
-it needs to observe *that* machine's systemd):
-
-```bash
-# edit MQTT_HOST / MQTT_USERNAME / MQTT_PASSWORD at the top of the script first
-bash systemctl-mqtt-install.sh
-```
+Run it **on each printer's Raspberry Pi** (not on the Home Assistant host —
+it needs to observe *that* machine's systemd). The exact same script and
+credentials work unmodified on every printer's Pi — each one reports under
+its own hostname automatically, so nothing printer-specific needs to change
+between runs.
 
 Two details the script bakes in that are easy to get wrong by hand:
 
@@ -202,7 +222,9 @@ Use that username/password in the `systemctl-mqtt` service instead, and
 Once connected with the right host, TLS setting, and credentials,
 `systemctl-mqtt` publishes Home Assistant MQTT-discovery messages
 immediately — no manual "add device" step needed. Four entities appear
-automatically under a device named after the printer's hostname:
+automatically per printer, under a device named after that printer's
+hostname — with all three printers set up, the MQTT integration lists three
+separate devices this way:
 
 ![MQTT-discovered entities for the printer host](images/homeassistant/mqtt-discovered-entities.png)
 
@@ -217,7 +239,8 @@ The one that matters here is `binary_sensor.<hostname>_logind_preparing_for_shut
 
 ### 4.4 The automation
 
-[`home-assistant/automations_addition.yaml`](../home-assistant/automations_addition.yaml):
+One automation per printer (three total, in
+[`home-assistant/automations_addition.yaml`](../home-assistant/automations_addition.yaml)):
 
 ```yaml
 - alias: Voron2TB Auto-Shutdown Power Off
@@ -237,6 +260,11 @@ The one that matters here is `binary_sensor.<hostname>_logind_preparing_for_shut
         entity_id: switch.voron_2_4_switch_0
   mode: single
 ```
+
+`trident` and `voron0`'s entries repeat this exact shape against their own
+`binary_sensor`/`switch` entities. It's safe to add all three automations
+before `systemctl-mqtt` is installed everywhere — an automation simply never
+triggers while its `binary_sensor` doesn't exist yet.
 
 Confirmed working end-to-end: the sensor flips to `Ein` (on) the instant a
 real shutdown starts, then the Shelly plug switches off automatically ~10
@@ -266,18 +294,22 @@ Instead:
 
 - Add only `rest_command:` from
   [`configuration_snippet.yaml`](../home-assistant/configuration_snippet.yaml)
-  directly to `configuration.yaml`.
-- Append the two entries from
+  directly to `configuration.yaml` (one entry per printer).
+- Append the entries from
   [`scripts_addition.yaml`](../home-assistant/scripts_addition.yaml) to your
   existing `scripts.yaml` (no `script:` key inside that file — it *is* the
   value of that key).
-- Append the one entry from
+- Append the entries from
   [`automations_addition.yaml`](../home-assistant/automations_addition.yaml)
   to your existing `automations.yaml` (no `automation:` key inside that file
   either).
 - Run **Developer Tools → YAML → Check Configuration** before restarting.
 - Restart Home Assistant completely (a new `rest_command` needs a full Core
   restart, not just "reload automations").
+- **Double-check `configuration.yaml` still has its original baseline lines
+  afterwards** (`default_config:`, the `!include` lines) — see the
+  troubleshooting table below for what happens if an edit accidentally
+  replaces the whole file instead of adding to it.
 
 ## 6. Verifying everything works
 
@@ -304,5 +336,6 @@ Instead:
 | `[code:135] Not authorized` | Used HA's internal `homeassistant` MQTT user, which is reserved for Core↔add-on traffic | Create a dedicated login in the Mosquitto add-on's Configuration → Logins |
 | Entity exists but state stuck on `unknown`/`unavailable` | Home Assistant's MQTT birth message wasn't seen by `systemctl-mqtt` (not retained, wrong timing after a restart) | Reload the MQTT integration while `systemctl-mqtt` is already running/connected |
 | `homeassistant.restart` service call fails, config check error mentioning `automations.yaml` line 2 | Duplicate `automation:`/`script:` keys in `configuration.yaml`, or a leftover `[]` placeholder line in `automations.yaml` | Keep `!include` in `configuration.yaml`; put new entries directly into `automations.yaml`/`scripts.yaml`; delete any stray `[]` line |
+| No config-check error, but only *some* expected scripts/automations show up (e.g. one printer's, not the others') even though the relevant `.yaml` file's content is verified correct | `configuration.yaml` was edited by replacing its *entire* content instead of appending — silently deleting the baseline `default_config:` / `automation: !include automations.yaml` / `script: !include scripts.yaml` lines | Confirm those baseline lines are still present (`grep -n "^script:\|^automation:\|^default_config:" configuration.yaml`); restore them if missing |
 | Camera image rotates once but reverts to unrotated after a page reload | Default tap-action recreated the image element before `card-mod`'s style reapplied | Set `tap_action: { action: none }` on the picture-entity card |
 | Rotating the camera in Home Assistant also rotated it in Mainsail | Rotation was applied at the source (Crowsnest/stream) instead of only in the browser | Use the `card_mod` CSS approach in section 2 instead of touching `crowsnest.conf` |

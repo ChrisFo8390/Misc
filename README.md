@@ -1,18 +1,20 @@
-# Voron 2.4 Tallboi — 5-Toolhead AFC/EMU MMU + Home Assistant Integration
+# Voron 2.4 Tallboi — 5-Toolhead AFC/EMU MMU + Home Assistant Printer Fleet Integration
 
-This repository documents two complete, working setups for a Voron 2.4 "Tallboi"
-running **Klipper** with **Klipper Toolchanger** (5 independent toolheads) and a
-5-lane **EMU** MMU driven by **AFC-Klipper-Add-On**:
+This repository documents two complete, working setups built around a Voron
+2.4 "Tallboi" running **Klipper** with **Klipper Toolchanger** (5 independent
+toolheads) and a 5-lane **EMU** MMU driven by **AFC-Klipper-Add-On**, plus a
+Home Assistant dashboard covering that printer and two others:
 
 1. **[AFC EMU MMU Setup](docs/01-afc-emu-toolchanger-setup.md)** — wiring, pin
    mapping, and Klipper configuration for a 5-lane EMU MMU in Direct Mode, one
    lane per toolhead, using a Mellow Fly D5 board for steppers/switches and a
    second board ("hexa") for the analog PFS buffer sensors.
 2. **[Home Assistant Dashboard & Auto-Shutdown](docs/02-home-assistant-dashboard-and-autoshutdown.md)**
-   — a Lovelace dashboard (status, temperatures, rotated camera feed, power
-   control) plus an automation that safely powers down the printer's Shelly
-   smart plug a fixed delay after a *real* shutdown is detected — never on a
-   Wi-Fi hiccup.
+   — a combined Lovelace dashboard for the Tallboi plus two other printers
+   (Trident, Voron 2 Mini) on one page (status, temperatures, rotated camera
+   feed, power control), plus a per-printer automation that safely powers
+   down each Shelly smart plug a fixed delay after a *real* shutdown is
+   detected — never on a Wi-Fi hiccup.
 
 ## Repository structure
 
@@ -33,12 +35,13 @@ running **Klipper** with **Klipper Toolchanger** (5 independent toolheads) and a
 │       ├── AFC_PFS_Test_Macros.cfg
 │       └── mcu/
 │           └── EMU_board.cfg
-└── home-assistant/                  # drop-in Home Assistant config
-    ├── voron2tb_dashboard.yaml      # full Lovelace view
-    ├── configuration_snippet.yaml   # add to configuration.yaml
-    ├── scripts_addition.yaml        # append to scripts.yaml
-    ├── automations_addition.yaml    # append to automations.yaml
-    └── systemctl-mqtt-install.sh    # run on the printer's Pi
+└── home-assistant/                  # drop-in Home Assistant config (3 printers)
+    ├── README.md                    # copy-pasteable systemctl-mqtt setup commands
+    ├── voron2tb_dashboard.yaml      # full Lovelace view, all 3 printers
+    ├── configuration_snippet.yaml   # add to configuration.yaml (1 rest_command per printer)
+    ├── scripts_addition.yaml        # append to scripts.yaml (2 scripts per printer)
+    ├── automations_addition.yaml    # append to automations.yaml (1 automation per printer)
+    └── systemctl-mqtt-install.sh    # run unchanged on every printer's Pi
 ```
 
 ## Hardware summary
