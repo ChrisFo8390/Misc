@@ -240,7 +240,28 @@ The one that matters here is `binary_sensor.<hostname>_logind_preparing_for_shut
 ### 4.4 The automation
 
 One automation per printer (three total, in
-[`home-assistant/automations_addition.yaml`](../home-assistant/automations_addition.yaml)):
+[`home-assistant/automations_addition.yaml`](../home-assistant/automations_addition.yaml)).
+
+**This needs to solve one more problem first:** `systemctl-mqtt` reports the
+exact same "preparing for shutdown" signal for `reboot` as it does for a
+real `poweroff`/`halt` (see section 4). So on its own, this trigger can't
+tell a restart from a real shutdown — cutting power on every reboot would
+prevent the host from ever completing it.
+
+A first attempt distinguished the two by waiting ~90s and then checking a
+`device_tracker` entity for `not_home`. **This didn't work reliably**: many
+router-based `device_tracker` integrations only flip a device to `not_home`
+after their own, often much longer, internal "consider home" grace period
+(commonly ~3 minutes) — regardless of how quickly the host actually
+disconnects. The 90s window frequently expired before that ever happened,
+the condition failed, and power was never cut even for a genuine shutdown.
+
+**The fix:** watch the *same* `binary_sensor` this automation already
+triggers on, for its own availability. It's reported over the
+`systemctl-mqtt` MQTT connection, which drops in near real-time the moment
+the host actually goes offline (Home Assistant shows this as the entity
+state becoming `unavailable`) and reconnects quickly once a reboot
+completes:
 
 ```yaml
 - alias: Voron2TB Auto-Shutdown Power Off
@@ -253,13 +274,50 @@ One automation per printer (three total, in
       entity_id: switch.voron_2_4_switch_0
       state: "on"
   action:
-    - delay:
-        seconds: 10
+    - wait_for_trigger:
+        - platform: state
+          entity_id: binary_sensor.voron2tb_logind_preparing_for_shutdown
+          to: "unavailable"
+      timeout: "00:00:30"
+      continue_on_timeout: true
+    - condition: state
+      entity_id: binary_sensor.voron2tb_logind_preparing_for_shutdown
+      state: "unavailable"
+    - wait_for_trigger:
+        - platform: state
+          entity_id: binary_sensor.voron2tb_logind_preparing_for_shutdown
+          from: "unavailable"
+      timeout: "00:01:30"
+      continue_on_timeout: true
+    - condition: state
+      entity_id: binary_sensor.voron2tb_logind_preparing_for_shutdown
+      state: "unavailable"
     - action: switch.turn_off
       target:
         entity_id: switch.voron_2_4_switch_0
   mode: single
 ```
+
+Two stages, both using `continue_on_timeout: true` so the automation always
+proceeds to the following `condition` check rather than stopping partway:
+
+1. **Confirm the host actually went offline** — wait up to 30s for the
+   sensor to become `unavailable`. In practice this usually takes only a
+   few seconds once the shutdown process actually tears down networking; if
+   it never happens within 30s, the automation stops here (nothing to power
+   off yet).
+2. **Give it a chance to come back (reboot)** — wait up to 90s for the
+   sensor to leave `unavailable` again. If it reconnects (a reboot), the
+   following condition fails and the automation stops — power stays on. If
+   it's still `unavailable` after 90s (a real shutdown), the condition
+   passes and the Shelly plug switches off.
+
+**Expected timing for a real shutdown: roughly 95–110 seconds** from the
+trigger to the plug actually switching off (mostly the fixed 90s of stage
+2, which always elapses in full for a genuine shutdown since the host never
+reconnects). This is deliberately much slower than an earlier 10-second
+design — the trade-off is not accidentally powering off mid-reboot.
+Shorten the 90s timeout in stage 2 if your host reliably reboots faster.
 
 `trident` and `voron0`'s entries repeat this exact shape against their own
 `binary_sensor`/`switch` entities. It's safe to add all three automations
@@ -267,8 +325,8 @@ before `systemctl-mqtt` is installed everywhere — an automation simply never
 triggers while its `binary_sensor` doesn't exist yet.
 
 Confirmed working end-to-end: the sensor flips to `Ein` (on) the instant a
-real shutdown starts, then the Shelly plug switches off automatically ~10
-seconds later:
+real shutdown starts, then (after the two-stage wait above) the Shelly plug
+switches off reliably, while a plain Mainsail "Restart" leaves it untouched:
 
 ![Activity log showing "preparing for shutdown" switching to "Ein"](images/homeassistant/shutdown-detected-activity.png)
 
@@ -339,3 +397,4 @@ Instead:
 | No config-check error, but only *some* expected scripts/automations show up (e.g. one printer's, not the others') even though the relevant `.yaml` file's content is verified correct | `configuration.yaml` was edited by replacing its *entire* content instead of appending — silently deleting the baseline `default_config:` / `automation: !include automations.yaml` / `script: !include scripts.yaml` lines | Confirm those baseline lines are still present (`grep -n "^script:\|^automation:\|^default_config:" configuration.yaml`); restore them if missing |
 | Camera image rotates once but reverts to unrotated after a page reload | Default tap-action recreated the image element before `card-mod`'s style reapplied | Set `tap_action: { action: none }` on the picture-entity card |
 | Rotating the camera in Home Assistant also rotated it in Mainsail | Rotation was applied at the source (Crowsnest/stream) instead of only in the browser | Use the `card_mod` CSS approach in section 2 instead of touching `crowsnest.conf` |
+| Shutdown is detected (`preparing_for_shutdown` briefly shows `on`) but the Shelly plug never switches off | Using a `device_tracker` entity with a `delay` to distinguish reboot vs. shutdown - the tracker's own "consider home" grace period (often ~3 min) can outlast the wait, so it never reads `not_home` in time | Use the `binary_sensor`'s own MQTT availability instead (`unavailable` state), as in section 4.4 - it updates within seconds of a real disconnect |

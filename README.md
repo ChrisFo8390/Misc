@@ -13,8 +13,12 @@ Home Assistant dashboard covering that printer and two others:
    — a combined Lovelace dashboard for the Tallboi plus two other printers
    (Trident, Voron 2 Mini) on one page (status, temperatures, rotated camera
    feed, power control), plus a per-printer automation that safely powers
-   down each Shelly smart plug a fixed delay after a *real* shutdown is
-   detected — never on a Wi-Fi hiccup.
+   down each Shelly smart plug once a *real* shutdown is confirmed — never on
+   a Wi-Fi hiccup or a plain reboot.
+3. **[LED Startup Effects](docs/03-led-startup-effects.md)** — a synchronized
+   startup animation across the chamber, all 5 toolhead LED groups, and the
+   AFC lane indicator strip, including the CAN-bus-safety rules learned the
+   hard way (a naive version crashed Klipper).
 
 ## Repository structure
 
@@ -24,14 +28,18 @@ Home Assistant dashboard covering that printer and two others:
 ├── docs/
 │   ├── 01-afc-emu-toolchanger-setup.md
 │   ├── 02-home-assistant-dashboard-and-autoshutdown.md
+│   ├── 03-led-startup-effects.md
 │   └── images/
 │       ├── afc/                     # screenshots for the AFC guide
 │       └── homeassistant/           # screenshots for the HA guide
 ├── config/
+│   ├── leds.cfg                     # chamber + toolhead LED groups & welcome macro
+│   ├── macros.cfg                   # startup delayed_gcode hook (calls the LED macros)
+│   ├── TC_SELECT_TOOL.cfg           # optional: pick up a toolhead without AFC's load hook
 │   └── AFC/                         # drop-in Klipper/AFC config (adjust to your printer)
 │       ├── AFC.cfg
 │       ├── AFC_Hardware.cfg
-│       ├── AFC_EMU.cfg
+│       ├── AFC_EMU.cfg              # includes the AFC lane LED indicator + welcome macro
 │       ├── AFC_PFS_Test_Macros.cfg
 │       └── mcu/
 │           └── EMU_board.cfg
