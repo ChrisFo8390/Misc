@@ -45,8 +45,11 @@ Home Assistant dashboard covering that printer and two others:
 └── home-assistant/                  # drop-in Home Assistant config (3 printers)
     ├── README.md                    # copy-pasteable systemctl-mqtt setup commands
     ├── voron2tb_dashboard.yaml      # full Lovelace view, all 3 printers
+    ├── configuration.yaml           # full reference configuration.yaml (baseline + rest_commands)
     ├── configuration_snippet.yaml   # add to configuration.yaml (1 rest_command per printer)
+    ├── scripts.yaml                 # full reference scripts.yaml (all printers)
     ├── scripts_addition.yaml        # append to scripts.yaml (2 scripts per printer)
+    ├── automations.yaml             # full reference automations.yaml (all printers)
     ├── automations_addition.yaml    # append to automations.yaml (1 automation per printer)
     └── systemctl-mqtt-install.sh    # run unchanged on every printer's Pi
 ```
