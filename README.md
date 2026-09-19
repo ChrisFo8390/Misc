@@ -34,8 +34,7 @@ Home Assistant dashboard covering that printer and two others:
 │       └── homeassistant/           # screenshots for the HA guide
 ├── config/
 │   ├── leds.cfg                     # chamber + toolhead LED groups & welcome macro
-│   ├── macros.cfg                   # startup delayed_gcode hook (calls the LED macros)
-│   ├── TC_SELECT_TOOL.cfg           # optional: pick up a toolhead without AFC's load hook
+│   ├── macros.cfg                   # startup delayed_gcode hook + TC_SELECT_TOOL utility macro
 │   └── AFC/                         # drop-in Klipper/AFC config (adjust to your printer)
 │       ├── AFC.cfg
 │       ├── AFC_Hardware.cfg

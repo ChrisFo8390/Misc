@@ -100,7 +100,7 @@ Defined in [`config/leds.cfg`](../config/leds.cfg). Current design, in order:
 4. **Single bright white flash** across chamber + all toolheads together.
 5. **Restore:** logo index 1 and both neb pixels go back to their accent
    color (the flash had overwritten them to white); chamber settles to
-   static white at 50% brightness; `_TOOLHEAD_LED` (pre-existing macro,
+   static white at 85% brightness; `_TOOLHEAD_LED` (pre-existing macro,
    unchanged) takes over logo indices 2+3 → static white.
 
 Accent colors per toolhead (also reused for the lane strip, section 4):
@@ -145,7 +145,8 @@ Once this macro finishes, `PREP` runs immediately after (same
 ## 5. Manual toolhead testing without AFC's load hook
 
 For testing a toolhead's mechanics without triggering AFC's automatic
-filament load, see [`config/TC_SELECT_TOOL.cfg`](../config/TC_SELECT_TOOL.cfg) —
+filament load, see the `TC_SELECT_TOOL` macro at the end of
+[`config/macros.cfg`](../config/macros.cfg) —
 a small macro wrapping klipper-toolchanger's native `SELECT_TOOL T=<n>`
 command. Usage: `TC_SELECT_TOOL T=0`. See the comments in that file and the
 troubleshooting table below for why this needed its own macro rather than

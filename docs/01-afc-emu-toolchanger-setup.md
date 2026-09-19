@@ -328,3 +328,4 @@ working, kept here for reference:
 | `CALIBRATE_AFC` fails with "stopped short of the toolhead sensor" | Estimated `dist_hub` starting value too low for the real Bowden length | `SET_HUB_DIST LANE=laneN LENGTH=+<missing_mm>`, then re-run calibration |
 | Extruder direction runs backwards | `dir_pin` polarity | Add `!` to `dir_pin` |
 | Toolhead sensor always reads "detected" with no filament present | Sensor polarity/pull-up wrong | Add `!` (invert) in addition to `^` (pull-up) for that specific sensor type |
+| A per-toolhead value (e.g. a heater's target temp, an extruder's `min_extrude_temp`) silently duplicated on one line right after itself | Copy-paste artifact when creating one toolhead's `T<n>.cfg` from another's | Check every tool file for a repeated `key: value` line in the same section (`awk` one-liner: flag any option seen twice within one `[section]`); Klipper's config parser rejects a genuine duplicate option in one section |

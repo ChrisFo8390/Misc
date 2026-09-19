@@ -1,0 +1,136 @@
+# ============================================================
+# Append these THREE entries to your existing automations.yaml
+# list. Do NOT add an "automation:" key here - automations.yaml
+# already IS the list assigned to the automation: key.
+#
+# FIXED: previous version used device_tracker.* to distinguish
+# reboot from shutdown, but many router integrations only flip
+# a device to "not_home" after their own long "consider_home"
+# grace period (often ~3 minutes) - our 90s window could expire
+# before that ever happened, so the condition failed and power
+# was never cut, even for a real shutdown.
+#
+# New approach: watch the SAME binary_sensor's own availability.
+# It's reported over the systemctl-mqtt MQTT connection, which
+# drops almost immediately when the host actually goes offline
+# (reported as "unavailable"), and reconnects quickly if it was
+# just a reboot. This avoids the device_tracker lag entirely.
+#
+# TUNE: 30s to confirm the real disconnect, then up to 90s to
+# see if it reconnects (reboot). Adjust if your Pi's reboot
+# cycle is typically slower.
+# ============================================================
+
+- alias: Voron2TB Auto-Shutdown Power Off
+  description: >-
+    Detects an externally triggered host shutdown (Mainsail, display,
+    SSH) via systemd/MQTT. Confirms the host actually went offline,
+    then waits to see if it reconnects on its own (= reboot, do
+    nothing) before switching off the Shelly plug (= real shutdown).
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.voron2tb_logind_preparing_for_shutdown
+      to: "on"
+  condition:
+    - condition: state
+      entity_id: switch.voron_2_4_switch_0
+      state: "on"
+  action:
+    - wait_for_trigger:
+        - platform: state
+          entity_id: binary_sensor.voron2tb_logind_preparing_for_shutdown
+          to: "unavailable"
+      timeout: "00:00:30"
+      continue_on_timeout: true
+    - condition: state
+      entity_id: binary_sensor.voron2tb_logind_preparing_for_shutdown
+      state: "unavailable"
+    - wait_for_trigger:
+        - platform: state
+          entity_id: binary_sensor.voron2tb_logind_preparing_for_shutdown
+          from: "unavailable"
+      timeout: "00:01:30"
+      continue_on_timeout: true
+    - condition: state
+      entity_id: binary_sensor.voron2tb_logind_preparing_for_shutdown
+      state: "unavailable"
+    - action: switch.turn_off
+      target:
+        entity_id: switch.voron_2_4_switch_0
+  mode: single
+
+- alias: Trident Auto-Shutdown Power Off
+  description: >-
+    Detects an externally triggered host shutdown via systemd/MQTT.
+    Confirms the host actually went offline, then waits to see if it
+    reconnects on its own (= reboot, do nothing) before switching off
+    the Shelly plug (= real shutdown).
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.trident_logind_preparing_for_shutdown
+      to: "on"
+  condition:
+    - condition: state
+      entity_id: switch.shelly_voron_trident_switch_0
+      state: "on"
+  action:
+    - wait_for_trigger:
+        - platform: state
+          entity_id: binary_sensor.trident_logind_preparing_for_shutdown
+          to: "unavailable"
+      timeout: "00:00:30"
+      continue_on_timeout: true
+    - condition: state
+      entity_id: binary_sensor.trident_logind_preparing_for_shutdown
+      state: "unavailable"
+    - wait_for_trigger:
+        - platform: state
+          entity_id: binary_sensor.trident_logind_preparing_for_shutdown
+          from: "unavailable"
+      timeout: "00:01:30"
+      continue_on_timeout: true
+    - condition: state
+      entity_id: binary_sensor.trident_logind_preparing_for_shutdown
+      state: "unavailable"
+    - action: switch.turn_off
+      target:
+        entity_id: switch.shelly_voron_trident_switch_0
+  mode: single
+
+- alias: Voron 2 Mini Auto-Shutdown Power Off
+  description: >-
+    Detects an externally triggered host shutdown via systemd/MQTT.
+    Confirms the host actually went offline, then waits to see if it
+    reconnects on its own (= reboot, do nothing) before switching off
+    the Shelly plug (= real shutdown).
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.voron0_logind_preparing_for_shutdown
+      to: "on"
+  condition:
+    - condition: state
+      entity_id: switch.shelly_voron_v2_mini
+      state: "on"
+  action:
+    - wait_for_trigger:
+        - platform: state
+          entity_id: binary_sensor.voron0_logind_preparing_for_shutdown
+          to: "unavailable"
+      timeout: "00:00:30"
+      continue_on_timeout: true
+    - condition: state
+      entity_id: binary_sensor.voron0_logind_preparing_for_shutdown
+      state: "unavailable"
+    - wait_for_trigger:
+        - platform: state
+          entity_id: binary_sensor.voron0_logind_preparing_for_shutdown
+          from: "unavailable"
+      timeout: "00:01:30"
+      continue_on_timeout: true
+    - condition: state
+      entity_id: binary_sensor.voron0_logind_preparing_for_shutdown
+      state: "unavailable"
+    - action: switch.turn_off
+      target:
+        entity_id: switch.shelly_voron_v2_mini
+  mode: single
